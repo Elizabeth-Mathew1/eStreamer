@@ -1,0 +1,6 @@
+flask
+grpcio
+protobuf
+google-api-python-client
+google-auth-oauthlib
+confluent-kafka
