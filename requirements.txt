@@ -1,4 +1,0 @@
-google-api-python-client>=2.0.0
-grpcio>=1.76.0
-protobuf>=4.21.0
-
