@@ -252,11 +252,9 @@ def index():
     Converts Video ID to Live Chat ID and starts a new ingestion thread.
     """
     if request.method == 'GET':
-        # Health check response
         return 'Server is running. Awaiting POST requests from Pub/Sub.', 200
 
     if request.method == 'POST':
-        # Use silent=True to handle malformed JSON gracefully (returns None on error)
         envelope = request.get_json(silent=True) 
         
         if envelope is None:

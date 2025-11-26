@@ -19,3 +19,7 @@ gcloud run deploy chat-ingestor-1 \
   --min-instances 0 \
   --port 8080
 
+
+  ## chmod +x deploy.sh to give executable permission
+  ## ./deploy.sh to run the script
+
