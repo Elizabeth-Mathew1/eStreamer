@@ -5,7 +5,10 @@ import threading
 import logging
 import json
 import base64
-from flask import Flask, request, jsonify
+
+from flask import Flask, request
+from datetime import datetime
+from dateutil import parser
 
 import proto.stream_list_pb2 as stream_list_pb2
 import proto.stream_list_pb2_grpc as stream_list_pb2_grpc
@@ -18,7 +21,7 @@ from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-from confluent_kafka import Producer, KafkaError, KafkaException
+from confluent_kafka import Producer, KafkaException
 
 
 # --- YouTube API Configuration ---
@@ -149,6 +152,10 @@ def youtube_ingest(live_chat_id: str):
 
     next_page_token = None
     access_token = refresh_access_token()
+    if not access_token:
+        logger.error("Failed to obtain access token. Cannot proceed with ingestion.")
+        return
+    
     producer = create_kafka_producer()
     
 
@@ -177,11 +184,20 @@ def youtube_ingest(live_chat_id: str):
                         author = item.author_details.display_name
                         message = item.snippet.display_message
 
+                        try:
+                            published_dt = parser.parse(item.snippet.published_at)
+                        except (ValueError, TypeError):
+                            published_dt = datetime.utcnow()
+
+                        epoch_seconds = published_dt.timestamp()
+
+                        published_at_ms = int(epoch_seconds * 1000)     
+
                         if producer:
                            
                             chat_data = {
                                 "id": item.id,
-                                "published_at": item.snippet.published_at,
+                                "published_at": published_at_ms,
                                 "live_chat_id": item.snippet.live_chat_id,
                                 "message": message,
                                 "author_display_name": author,
@@ -206,7 +222,7 @@ def youtube_ingest(live_chat_id: str):
                                 logger.warning(f"Kafka production failed or buffer full: {kafka_err}") 
 
                         # Log the chat message at the INFO level
-                        logger.info(f"CHAT: [{author}]: {message}") 
+                        logger.info(f"CHAT: [{author}]: {message}: {published_at_ms}") 
                         next_page_token = response.next_page_token
                         if not next_page_token:
                             logger.info("Stream ended or encountered terminal message.")
