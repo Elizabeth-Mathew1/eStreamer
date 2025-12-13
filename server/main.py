@@ -3,6 +3,8 @@ import json
 from flask import Flask, request, jsonify
 from google.cloud import pubsub_v1
 
+from routers import prediction_router
+
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 TOPIC_ID = os.environ.get("PUBSUB_TOPIC_ID")
 
@@ -10,6 +12,8 @@ publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 
 app = Flask(__name__)
+
+app.register_blueprint(prediction_router)
 
 
 @app.route("/video_id", methods=["POST"])
@@ -53,4 +57,4 @@ if __name__ == "__main__":
     # Use gunicorn in production containers, but Flask's built-in server for local testing
     # Cloud Run automatically sets the PORT environment variable
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)  # nosec B104
