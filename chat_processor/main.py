@@ -219,7 +219,7 @@ def run_consumer(db):
     if consumer is None:
         return
 
-    logger.info(f"Starting consumer loop...")
+    logger.info("Starting consumer loop...")
 
     while True:
         try:
