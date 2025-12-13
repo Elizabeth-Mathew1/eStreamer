@@ -1,59 +1,82 @@
 import google.generativeai as genai
 import json
-
 from web_server.settings import GEMINI_API_KEY
 
 # --- 1. SETUP ---
-# Make sure to set your API key in your environment variables or paste it here
-# os.environ["GOOGLE_API_KEY"] = "YOUR_ACTUAL_API_KEY"
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Use Flash for speed (low latency for live streams)
-model = genai.GenerativeModel("gemini-2.5-flash-preview-09-2025")
+# --- 2. DEFINE THE SCHEMA (The Structure) ---
+# This tells the model EXACTLY what JSON fields to return.
+# We define this once, outside the function.
+prediction_schema = {
+    "type": "OBJECT",
+    "properties": {
+        "predicted_volume": {"type": "INTEGER"},
+        "predicted_sentiment": {"type": "NUMBER"},
+        "volatility_risk": {
+            "type": "STRING",
+            "enum": ["LOW", "MEDIUM", "HIGH"],  # Enforce specific values
+        },
+        "simulated_chat_samples": {"type": "ARRAY", "items": {"type": "STRING"}},
+        "reasoning": {"type": "STRING"},
+    },
+    "required": [
+        "predicted_volume",
+        "predicted_sentiment",
+        "volatility_risk",
+        "simulated_chat_samples",
+        "reasoning",
+    ],
+}
+
+# --- 3. DEFINE THE SYSTEM PROMPT (The Persona) ---
+# This sets the behavior. It is passed to the model on initialization.
+
+system_instruction = """
+You are an AI Analyst for a high-speed YouTube Livestream.
+
+Your Task:
+1. Analyze the trajectory of the provided message volume and sentiment data.
+2. Predict the stats for the NEXT minute (Minute 0 / Now).
+3. Generate 3 "Simulated Chat Messages" that represent exactly what users will likely say next.
+   - If sentiment is dropping, write angry/troll messages.
+   - If sentiment is hype, write excited messages.
+   - Use slang appropriate for Twitch/YouTube (e.g., "W stream", "L", "rip").
+"""
+
+# Initialize the model with the system instruction
+# Note: Ensure you use a model that supports system_instruction and response_schema (Gemini 1.5 Pro/Flash)
+model = genai.GenerativeModel(
+    model_name="gemini-2.5-flash-preview-09-2025",  # Use a standard valid model name
+    system_instruction=system_instruction,
+)
 
 
 def generate_prediction(history_window):
     """
-    Takes a list of dictionary objects representing past chat minutes.
-    Returns a JSON object with predictions and synthetic chat samples.
+    Takes history data, sends it to Gemini, and returns structured JSON.
     """
 
-    # --- 2. THE PROMPT ---
-    # We explicitly ask for JSON format to ensure our app can parse it easily.
-    prompt = f"""
-    You are an AI Analyst for a high-speed YouTube Livestream.
-    
-    **Context:**
-    Here is the aggregated data from the last 5 minutes of chat history.
-    - 'volume': messages per minute.
-    - 'sentiment': -1.0 (negative) to 1.0 (positive).
-    - 'keywords': most common words used.
-
-    **History Data:**
-    {json.dumps(history_window, indent=2)}
-
-    **Your Task:**
-    1. Analyze the trajectory of the volume and sentiment.
-    2. Predict the stats for the NEXT minute (Minute 0 / Now).
-    3. **CRITICAL:** Generate 3 "Simulated Chat Messages" that represent exactly what users will likely say next, matching the predicted mood and keywords.
-       - If sentiment is dropping, write angry/troll messages.
-       - If sentiment is hype, write excited messages.
-       - Use slang appropriate for Twitch/YouTube (e.g., "W stream", "L", "rip").
-
-    **Response Format (JSON ONLY, no markdown):**
-    {{
-      "predicted_volume": <int>,
-      "predicted_sentiment": <float>,
-      "volatility_risk": "<LOW | MEDIUM | HIGH>",
-      "simulated_chat_samples": ["<msg1>", "<msg2>", "<msg3>"],
-      "reasoning": "<short explanation>"
-    }}
-    """
+    # --- 4. THE USER QUERY (The Data) ---
+    # We only send the data here. No instructions needed.
+    user_query = json.dumps(history_window)
 
     try:
-        # --- 3. CALL GEMINI ---
+        payload = {
+            "contents": [{"parts": [{"text": user_query}]}],
+            "generationConfig": {
+                "responseMimeType": "application/json",
+                "responseSchema": prediction_schema,
+            },
+        }
+
+        # --- Call Gemini using payload ---
         response = model.generate_content(
-            prompt, generation_config={"response_mime_type": "application/json"}
+            contents=payload["contents"],
+            generation_config=genai.GenerationConfig(
+                response_mime_type=payload["generationConfig"]["responseMimeType"],
+                response_schema=payload["generationConfig"]["responseSchema"],
+            ),
         )
 
         # Parse the JSON string back into a Python dictionary
@@ -65,9 +88,7 @@ def generate_prediction(history_window):
         return None
 
 
-# --- 4. RUNNING THE EXAMPLE ---
-
-# Simulating data where a stream is crashing (High lag, angry users)
+# --- 6. RUNNING THE EXAMPLE ---
 sample_history = [
     {
         "minute_offset": -5,
@@ -105,6 +126,6 @@ if result:
     print(f"Predicted Sentiment: {result['predicted_sentiment']}")
     print(f"Risk Level: {result['volatility_risk']}")
     print(f"Reasoning: {result['reasoning']}")
-    print("\n--- FUTURE CHAT SAMPLES (What users will say next) ---")
+    print("\n--- FUTURE CHAT SAMPLES ---")
     for msg in result["simulated_chat_samples"]:
         print(f"> {msg}")
