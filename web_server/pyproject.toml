@@ -1,0 +1,20 @@
+[project]
+name = "ESTREAMER"
+version = "0.1.0"
+description = "Web server for analyising and processing live stream chat"
+authors = [
+    {name = "Your Name",email = "you@example.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi (>=0.124.4,<0.125.0)",
+    "uvicorn (>=0.38.0,<0.39.0)",
+    "python-decouple (>=3.8,<4.0)",
+    "ruff (>=0.14.9,<0.15.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
