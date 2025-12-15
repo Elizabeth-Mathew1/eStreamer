@@ -3,5 +3,5 @@ gcloud run deploy stream-server \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
-  --service-account=437245115270-compute@developer.gserviceaccount.com \
+   --service-account="$SERVICE_ACCOUNT_EMAIL"
  
