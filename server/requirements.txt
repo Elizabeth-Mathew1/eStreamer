@@ -1,3 +1,7 @@
 flask
 google-cloud-pubsub
-gunicorn  
+gunicorn
+python-decouple
+google-generativeai
+beartype
+google-cloud-firestore
