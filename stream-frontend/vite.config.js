@@ -11,6 +11,15 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://stream-server-437245115270.us-central1.run.app',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })
 
 

@@ -1,15 +1,15 @@
+import { Box, Container } from '@chakra-ui/react'
+import MainInputBox from './components/MainInputBox'
+import Loader from './components/Loader'
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          YouTube Stream Analytics
-        </h1>
-        <p className="text-gray-600">
-          Frontend application for real-time YouTube chat analytics
-        </p>
-      </div>
-    </div>
+    <Box minH="100vh" bg="0B0C0E" py={8} px={10} color="white">
+      <Container maxW="container.lg">
+        <MainInputBox />
+        <Loader />
+      </Container>
+    </Box>
   )
 }
 
