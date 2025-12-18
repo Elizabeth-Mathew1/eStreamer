@@ -15,4 +15,4 @@ COPY protos /app/protos
 ENV PORT 8080
 
 
-CMD ["python3", "youtube_ingest.py"]
+CMD ["python3", "main.py"]
