@@ -23,31 +23,31 @@ body {
 /* Loader */
 .loader {
   display: inline-flex;
-  gap: 10px;
+  gap: 20px;
 }
 
 .loader::before,
 .loader::after {
   content: "";
-  height: 20px;
+  height: 30px;
   aspect-ratio: 1;
   border-radius: 50%;
   background:
     linear-gradient(#222 0 0) top/100% 40% no-repeat,
-    radial-gradient(farthest-side, #000 95%, #0000) 50%/8px 8px no-repeat #fff;
+    radial-gradient(farthest-side, #000 95%, #0000) 50%/16px 16px no-repeat #fff;
   animation: l7 1.5s infinite alternate ease-in;
 }
 
 @keyframes l7 {
   0%,
   70% {
-    background-size: 100% 40%, 8px 8px;
+    background-size: 100% 40%, 16px 16px;
   }
   85% {
-    background-size: 100% 120%, 8px 8px;
+    background-size: 100% 120%, 16px 16px;
   }
   100% {
-    background-size: 100% 40%, 8px 8px;
+    background-size: 100% 40%, 16px 16px;
   }
 }
 

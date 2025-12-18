@@ -21,7 +21,7 @@ const Loader = () => {
   }, [])
 
   return (
-    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt="30vh" gap={4}>
+    <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" mt="25vh" gap={4}>
       <Box className="loader" />
       <Text color="blue.300" fontSize="14px">
         {LOADING_MESSAGES[currentMessageIndex]}
