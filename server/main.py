@@ -3,7 +3,7 @@ import json
 from flask import Flask, request, jsonify
 from google.cloud import pubsub_v1
 
-from routers import prediction_router
+from routers import prediction_router, analyze_router
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 TOPIC_ID = os.environ.get("PUBSUB_TOPIC_ID")
@@ -14,6 +14,8 @@ topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 app = Flask(__name__)
 
 app.register_blueprint(prediction_router)
+
+app.register_blueprint(analyze_router)
 
 
 @app.route("/video_id", methods=["POST"])
