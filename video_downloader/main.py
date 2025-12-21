@@ -2,11 +2,13 @@ import os
 import threading
 
 from flask import Flask
+from flask_cors import CORS
 
 from controllers.consumer import VideoTimeStampConsumerController
 
 
 app = Flask(__name__)
+CORS(app)
 
 listener_thread = threading.Thread(
     target=VideoTimeStampConsumerController().consume(), daemon=True
