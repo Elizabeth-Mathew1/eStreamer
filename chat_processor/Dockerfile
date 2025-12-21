@@ -1,6 +1,4 @@
 FROM python:3.11-slim
-
-
 WORKDIR /app
 
 
@@ -9,10 +7,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 
 COPY main.py .
-COPY protos /app/protos
-
-
-ENV PORT 8080
+COPY service_account_creds.json .
 
 
 CMD ["python3", "main.py"]

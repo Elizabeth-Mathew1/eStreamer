@@ -2,6 +2,7 @@ import os
 import json
 import requests
 import time
+import threading
 from confluent_kafka import Consumer, KafkaException, KafkaError
 from datetime import datetime, timedelta, timezone
 import logging
@@ -205,7 +206,6 @@ def process_batch(db, msg_value):
             "key_phrases": analysis.get("key_phrases", []),
         }
 
-        print(doc_data)
 
         db.collection(COLLECTION_NAME).document(doc_id).set(doc_data)
         logger.info(f"Saved analysis to Firestore: {doc_id}")
@@ -254,9 +254,27 @@ def run_consumer(db):
             time.sleep(5)
 
 
-if __name__ == "__main__":
+def start_consumer_thread():
+    logger.info("Initializing Firebase for consumer thread...")
     db = initialize_firebase()
     if db is None:
-        logger.error("Firebase not initialized. Exiting.")
-        exit(1)
-    run_consumer(db)
+        logger.error("Firebase not initialized. Consumer thread will not start.")
+        return
+    
+    consumer_thread = threading.Thread(target=run_consumer, args=(db,), daemon=True)
+    consumer_thread.start()
+    logger.info("Kafka consumer thread started successfully")
+
+
+
+@app.route('/')
+def index():
+    return {"status": "healthy", "service": "chat-processor"}, 200
+
+
+
+if __name__ == "__main__":
+
+    start_consumer_thread()
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port, debug=False)

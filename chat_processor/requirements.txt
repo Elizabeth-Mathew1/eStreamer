@@ -4,3 +4,4 @@ google-cloud-firestore
 firebase-admin
 google-generativeai
 python-dotenv
+flask
