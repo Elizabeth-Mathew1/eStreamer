@@ -28,7 +28,6 @@ IMAGE_TAG="gcr.io/$PROJECT_ID/$SERVICE_NAME"
 
 gcloud secrets create $SECRET_NAME --project=$PROJECT_ID --replication-policy="automatic" 2>/dev/null
 
-
 gcloud secrets versions add $SECRET_NAME --project=$PROJECT_ID --data-file=.env
 
 if [ $? -ne 0 ]; then
@@ -42,7 +41,6 @@ if [ $? -ne 0 ]; then
     echo "Build failed! Aborting."
     exit 1
 fi
-
 
 
 gcloud run deploy $SERVICE_NAME \
