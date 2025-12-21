@@ -12,6 +12,8 @@ from settings import (
     VIDEO_DOWNLOADER_JOB_COLLECTION_NAME,
     KAFKA_VIDEO_DOWNLOADER_JOB_TOPIC,
     KAFKA_BOOTSTRAP_SERVERS,
+    KAFKA_API_SECRET,
+    KAFKA_API_KEY,
 )
 
 
@@ -29,7 +31,13 @@ class DownloadController:
     def __init__(self, live_video_url: str) -> None:
         self.db = firestore.Client(database=FIRESTORE_DB_NAME)
         self.live_video_url = live_video_url
-        self.producer_config = {"bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS}
+        self.producer_config = {
+            "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+            "security.protocol": "SASL_SSL",
+            "sasl.mechanisms": "PLAIN",
+            "sasl.username": KAFKA_API_KEY,
+            "sasl.password": KAFKA_API_SECRET,
+        }
         self.producer = Producer(self.producer_config)
 
     def fetch_high_sentiment_clips(self) -> list:

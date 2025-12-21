@@ -8,6 +8,8 @@ from settings.base import (
     KAFKA_BOOTSTRAP_SERVERS,
     KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC,
     VIDEO_DOWNLOADER_JOB_COLLECTION_NAME,
+    KAFKA_API_KEY,
+    KAFKA_API_SECRET,
 )
 
 logging.basicConfig(
@@ -23,6 +25,10 @@ class VideoStatusController:
         self.db = firestore.Client(database=FIRESTORE_DB_NAME)
         self.consumer_conf = {
             "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+            "security.protocol": "SASL_SSL",
+            "sasl.mechanisms": "PLAIN",
+            "sasl.username": KAFKA_API_KEY,
+            "sasl.password": KAFKA_API_SECRET,
             "group.id": "video-status-group",
             "auto.offset.reset": "earliest",
         }

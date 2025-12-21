@@ -11,6 +11,8 @@ from settings import (
     BUCKET_NAME,
     KAFKA_VIDEO_DOWNLOADER_JOB_TOPIC,
     KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC,
+    KAFKA_API_KEY,
+    KAFKA_API_SECRET,
 )
 
 
@@ -21,6 +23,10 @@ class VideoTimeStampConsumerController:
     def __init__(self):
         self.consumer_configs = {
             "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+            "security.protocol": "SASL_SSL",
+            "sasl.mechanisms": "PLAIN",
+            "sasl.username": KAFKA_API_KEY,
+            "sasl.password": KAFKA_API_SECRET,
             "group.id": "video-cosnumer",
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
@@ -28,7 +34,13 @@ class VideoTimeStampConsumerController:
         self.consumer = Consumer(self.consumer_configs)
         self.storage_client = storage.Client()
         self.bucket = self.storage_client.bucket(BUCKET_NAME)
-        self.producer_conf = {"bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS}
+        self.producer_conf = {
+            "bootstrap.servers": KAFKA_BOOTSTRAP_SERVERS,
+            "security.protocol": "SASL_SSL",
+            "sasl.mechanisms": "PLAIN",
+            "sasl.username": KAFKA_API_KEY,
+            "sasl.password": KAFKA_API_SECRET,
+        }
 
         self.producer = Producer(self.producer_conf)
 

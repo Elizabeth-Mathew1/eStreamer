@@ -7,3 +7,5 @@ BUCKET_NAME = config("BUCKET_NAME", cast=str)
 KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC = config(
     "KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC", cast=str
 )
+KAFKA_API_KEY = config("KAFKA_API_KEY", cast=str)
+KAFKA_API_SECRET = config("KAFKA_API_SECRET", cast=str)
