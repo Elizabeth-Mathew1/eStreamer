@@ -1,7 +1,15 @@
+import logging
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from settings.base import FIRESTORE_DB_NAME, VIDEO_DOWNLOADER_JOB_COLLECTION_NAME
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 class VideoStatusPollController:
@@ -9,6 +17,8 @@ class VideoStatusPollController:
         self.db = firestore.Client(database=FIRESTORE_DB_NAME)
 
     def poll(self, video_url: str):
+        logger.info(f"🔍 [Poll] Checking status for video: {video_url}")
+
         query = (
             self.db.collection(VIDEO_DOWNLOADER_JOB_COLLECTION_NAME)
             .where(filter=FieldFilter("live_video_url", "==", video_url))
@@ -16,23 +26,33 @@ class VideoStatusPollController:
             .limit(1)
         )
 
-        docs = list(query.stream())
+        try:
+            docs = list(query.stream())
+        except Exception as e:
+            logger.error(f"[Poll] Firestore query failed: {e}")
+            return None
 
         if not docs:
+            logger.info("[Poll] No previous jobs found for this URL.")
             return None
 
         data = docs[0].to_dict()
+        job_id = data.get("job_id")
+        status = data.get("status", "PENDING")
 
         total = data.get("total_clips_expected", 1)
-        job_id = data.get("job_id")
         completed = data.get("clips_completed_count", 0)
         failed = data.get("failed_clips", 0)
 
         percent = int((completed / total) * 100) if total > 0 else 0
 
+        logger.info(
+            f"[Poll] Found Job {job_id} | Status: {status} | Progress: {percent}%"
+        )
+
         return {
             "job_id": job_id,
-            "status": data.get("status", "PENDING"),
+            "status": status,
             "progress": {
                 "current": completed,
                 "total": total,

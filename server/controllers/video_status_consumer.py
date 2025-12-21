@@ -1,3 +1,4 @@
+import logging
 import json
 from google.cloud import firestore
 from confluent_kafka import Consumer
@@ -8,6 +9,13 @@ from settings.base import (
     KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC,
     VIDEO_DOWNLOADER_JOB_COLLECTION_NAME,
 )
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 class VideoStatusController:
@@ -24,8 +32,8 @@ class VideoStatusController:
         """Runs in background thread on Main Server"""
         self.consumer.subscribe([KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC])
 
-        print(
-            f"Main Server listening for results on '{KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC}'..."
+        logger.info(
+            f"🎧 [StatusListener] Main Server listening for results on '{KAFKA_VIDEO_DOWNLOADER_STATUS_TOPIC}'..."
         )
 
         try:
@@ -34,21 +42,25 @@ class VideoStatusController:
                 if msg is None:
                     continue
                 if msg.error():
-                    print(f"Consumer Error: {msg.error()}")
+                    logger.error(f"[StatusListener] Consumer Error: {msg.error()}")
                     continue
 
-                data = json.loads(msg.value().decode("utf-8"))
-                self._handle_job_completion(data)
+                try:
+                    data = json.loads(msg.value().decode("utf-8"))
+                    self._handle_job_completion(data)
+                except Exception as e:
+                    logger.error(f"[StatusListener] Failed to process message: {e}")
 
         finally:
             self.consumer.close()
+            logger.info("[StatusListener] Consumer closed.")
 
     def _handle_job_completion(self, data):
         job_id = data.get("job_id")
         status = data.get("status")
         gcs_url = data.get("gcs_url")
 
-        print(f"Received result for Job {job_id}: {status}")
+        logger.info(f"[StatusListener] Received result for Job {job_id}: {status}")
 
         doc_ref = self.db.collection(VIDEO_DOWNLOADER_JOB_COLLECTION_NAME).document(
             job_id
@@ -58,6 +70,9 @@ class VideoStatusController:
         def update_in_transaction(transaction, ref):
             snapshot = ref.get(transaction=transaction)
             if not snapshot.exists:
+                logger.warning(
+                    f"[StatusListener] Job {job_id} not found in Firestore. Skipping update."
+                )
                 return
 
             doc_data = snapshot.to_dict()
@@ -87,9 +102,15 @@ class VideoStatusController:
                 else:
                     updates["status"] = "COMPLETED"
 
-                print(f"Job {job_id} finished. Status: {updates['status']}")
+                logger.info(
+                    f"🏁 [StatusListener] Job {job_id} fully finished. Final Status: {updates['status']}"
+                )
 
             transaction.update(ref, updates)
 
+        # Run the transaction
         transaction = self.db.transaction()
-        update_in_transaction(transaction, doc_ref)
+        try:
+            update_in_transaction(transaction, doc_ref)
+        except Exception as e:
+            logger.error(f"[StatusListener] Transaction failed for Job {job_id}: {e}")

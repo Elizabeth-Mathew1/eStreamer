@@ -1,3 +1,4 @@
+import logging
 import re
 import statistics
 from collections import Counter
@@ -6,6 +7,14 @@ from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
 from settings.base import COLLECTION_NAME, FIRESTORE_DB_NAME
+
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 class AnalyzerController:
@@ -33,8 +42,15 @@ class AnalyzerController:
         return False
 
     def analyze(self):
+        logger.info(f"🔍 [Analyzer] Starting analysis for Chat ID: {self.live_chat_id}")
+        logger.info(f"⏱️ [Analyzer] Window duration: {self.duration_seconds} seconds")
+
         now = datetime.now(timezone.utc)
         start_time = now - timedelta(seconds=int(self.duration_seconds))
+
+        logger.info(
+            f"[Analyzer] Fetching data since: {start_time.strftime('%H:%M:%S UTC')}"
+        )
 
         query = (
             self.db.collection(COLLECTION_NAME)
@@ -50,6 +66,8 @@ class AnalyzerController:
         all_chats = []
         doc_count = 0
         seen_messages = set()
+
+        logger.info("[Analyzer] Streaming documents from Firestore...")
 
         for doc in docs:
             doc_data = doc.to_dict()
@@ -79,7 +97,12 @@ class AnalyzerController:
 
                 all_chats.append({"message": text, "author": user, "score": score})
 
+        logger.info(f"[Analyzer] Processed {doc_count} window documents.")
+
         if doc_count == 0:
+            logger.warning(
+                "[Analyzer] No data found in this time window. Returning empty stats."
+            )
             return {
                 "avg_sentiment": 0,
                 "top_topics": [],
@@ -88,13 +111,15 @@ class AnalyzerController:
             }
 
         final_avg_sentiment = statistics.mean(sentiments) if sentiments else 0
-
         final_top_topics = [name for name, _ in all_topics.most_common(5)]
-
         final_top_users = [{user: count} for user, count in all_users.most_common(5)]
 
         sorted_chats = sorted(all_chats, key=lambda x: x["score"], reverse=True)
         final_top_chats = [c["message"] for c in sorted_chats[:5]]
+
+        logger.info(
+            f"[Analyzer] Results -> Sentiment: {round(final_avg_sentiment, 2)} | Top Topics: {final_top_topics}"
+        )
 
         return {
             "avg_sentiment": round(final_avg_sentiment, 2),
