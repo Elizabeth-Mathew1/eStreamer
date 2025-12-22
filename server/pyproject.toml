@@ -17,6 +17,7 @@ dependencies = [
     "google-cloud-firestore (>=2.21.0,<3.0.0)",
     "yt-dlp (>=2025.12.8,<2026.0.0)",
     "flask-cors (>=6.0.2,<7.0.0)",
+    "confluent-kafka (>=2.12.2,<3.0.0)",
 ]
 
 

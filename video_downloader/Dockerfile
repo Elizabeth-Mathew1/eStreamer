@@ -24,4 +24,4 @@ RUN poetry install --no-root --only main
 
 COPY . .
 
-CMD exec gunicorn --bind :$PORT --workers 1 main:app
+CMD exec gunicorn --bind :${PORT:-8080} --workers 1 main:app
