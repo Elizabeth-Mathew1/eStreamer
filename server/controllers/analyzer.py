@@ -115,7 +115,7 @@ class AnalyzerController:
         final_top_users = [{user: count} for user, count in all_users.most_common(5)]
 
         sorted_chats = sorted(all_chats, key=lambda x: x["score"], reverse=True)
-        final_top_chats = [c["message"] for c in sorted_chats[:5]]
+        final_top_chats = [{c["author"]: c["message"]} for c in sorted_chats[:5]]
 
         logger.info(
             f"[Analyzer] Results -> Sentiment: {round(final_avg_sentiment, 2)} | Top Topics: {final_top_topics}"
