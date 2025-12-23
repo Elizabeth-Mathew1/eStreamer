@@ -160,6 +160,7 @@ def get_live_chat_id(video_id: str) -> str | None:
 
         stream_data = {
             "live_video_url": f"https://www.youtube.com/watch?v={video_id}",
+            "video_id": video_id,
             "stream_start_time": start_time,
             "stream_name": snippet.get("title"),
             "channel_name": snippet.get("channelTitle"),

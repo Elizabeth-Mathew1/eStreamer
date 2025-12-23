@@ -6,7 +6,11 @@ from datetime import datetime, timedelta, timezone
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-from settings.base import COLLECTION_NAME, FIRESTORE_DB_NAME
+from settings.base import (
+    COLLECTION_NAME,
+    FIRESTORE_DB_NAME,
+    FIRESTORE_COLLECTION_STREAM_METADATA,
+)
 
 
 logging.basicConfig(
@@ -18,9 +22,10 @@ logger = logging.getLogger(__name__)
 
 
 class AnalyzerController:
-    def __init__(self, live_chat_id: str, duration_seconds: int) -> None:
-        self.live_chat_id = live_chat_id
+    def __init__(self, video_id: str, duration_seconds: int) -> None:
+        self.video_id = video_id
         self.duration_seconds = duration_seconds
+        self.live_chat_id = None
         self.db = firestore.Client(database=FIRESTORE_DB_NAME)
 
     def _is_spam(self, text: str) -> bool:
@@ -44,6 +49,17 @@ class AnalyzerController:
     def analyze(self):
         logger.info(f"🔍 [Analyzer] Starting analysis for Chat ID: {self.live_chat_id}")
         logger.info(f"⏱️ [Analyzer] Window duration: {self.duration_seconds} seconds")
+
+        query = self.db.collection(FIRESTORE_COLLECTION_STREAM_METADATA).where(
+            filter=FieldFilter("video_id", "==", self.video_id)
+        )
+
+        doc = next(query.stream(), None)
+
+        if doc:
+            self.live_chat_id = doc.get("live_chat_id")
+        else:
+            raise Exception("Video ID not found in stream metadata")
 
         now = datetime.now(timezone.utc)
         start_time = now - timedelta(seconds=int(self.duration_seconds))

@@ -11,16 +11,16 @@ def predict_route():
         if not data:
             return jsonify({"error": "Invalid JSON body"}), 400
 
-        live_chat_id = data.get("live_chat_id")
-        if not live_chat_id:
-            return jsonify({"error": "Missing 'live_chat_id'"}), 400
+        video_id = data.get("video_id")
+        if not video_id:
+            return jsonify({"error": "Missing 'video_id'"}), 400
 
         duration_seconds = data.get("duration")
         if not duration_seconds:
             duration_seconds = 60
 
         controller = AnalyzerController(
-            live_chat_id=live_chat_id, duration_seconds=duration_seconds
+            duration_seconds=duration_seconds, video_id=video_id
         )
         result = controller.analyze()
 
