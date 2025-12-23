@@ -112,7 +112,7 @@ class AnalyzerController:
 
         final_avg_sentiment = statistics.mean(sentiments) if sentiments else 0
         final_top_topics = [name for name, _ in all_topics.most_common(5)]
-        final_top_users = [{user: count} for user, count in all_users.most_common(5)]
+        final_top_users = [{user: count} for user, count in all_users.most_common(10)]
 
         sorted_chats = sorted(all_chats, key=lambda x: x["score"], reverse=True)
         final_top_chats = [{c["author"]: c["message"]} for c in sorted_chats[:5]]
