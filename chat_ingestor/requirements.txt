@@ -5,4 +5,5 @@ google-api-python-client
 google-auth-oauthlib
 confluent-kafka
 python-dateutil
-google-cloud-firestore 
+firebase-admin
+google-cloud-firestore

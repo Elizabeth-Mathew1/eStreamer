@@ -11,8 +11,8 @@ from datetime import datetime
 from dateutil import parser
 from google.cloud import firestore
 
-import proto.stream_list_pb2 as stream_list_pb2
-import proto.stream_list_pb2_grpc as stream_list_pb2_grpc
+import grpc_proto.stream_list_pb2 as stream_list_pb2
+import grpc_proto.stream_list_pb2_grpc as stream_list_pb2_grpc
 
 
 from google.oauth2.credentials import Credentials
