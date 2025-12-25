@@ -7,9 +7,10 @@ import {
   Flex,
   Text,
 } from '@chakra-ui/react'
-import { setVideoUrl } from '../features/stream/streamSlice'
-import { useStartStreamMutation } from '../features/api/apiSlice'
+import { setVideoUrl, setIsAnalyzing, setAnalyticsData } from '../features/stream/streamSlice'
+import { useStartStreamMutation, useLazyGetAnalyticsQuery } from '../features/api/apiSlice'
 import { IoIosLink } from 'react-icons/io'
+import { LOADING_STATUS } from '../common'
 
 // Extract video ID from YouTube URL
 const extractVideoId = (url) => {
@@ -21,18 +22,36 @@ const extractVideoId = (url) => {
 const StreamURLInput = () => {
   const dispatch = useDispatch()
   const videoUrl = useSelector((state) => state.stream.videoUrl)
-  const [startStream, { isLoading, error }] = useStartStreamMutation()
+  const isAnalyzing = useSelector((state) => state.stream.isAnalyzing)
+  const duration = useSelector((state) => state.stream.duration)
+  const analyticsData = useSelector((state) => state.stream.analyticsData)
+
+  // Extract video ID from URL
+  const videoId = extractVideoId(videoUrl)
+
+  const [startStream, { error }] = useStartStreamMutation()
+  
+  // Use lazy query - manual trigger, no auto-fetch
+  const [triggerAnalytics, { isLoading: isGettingAnalytics}] = useLazyGetAnalyticsQuery()
 
   const handleUrlChange = (e) => {
     dispatch(setVideoUrl(e.target.value))
   }
 
   const handleAnalyze = async () => {
+    // Prevent multiple clicks
+    if (isAnalyzing == LOADING_STATUS.LOADING) {
+      return
+    }
+
     const videoId = extractVideoId(videoUrl)
     if (!videoId) {
       alert('Please enter a valid YouTube URL')
       return
     }
+
+    // Set analyzing to true
+    dispatch(setIsAnalyzing(LOADING_STATUS.LOADING))
 
     try {
       // start background stream chats ingestion
@@ -41,8 +60,37 @@ const StreamURLInput = () => {
     } catch (err) {
       console.error('Error starting stream:', err)
       alert(err?.data?.error || 'Failed to start stream')
+      dispatch(setIsAnalyzing(false))
+      return
+    }
+
+
+    // Set analyzing to false after 1 minute (60 seconds)
+    setTimeout(() => {
+      dispatch(setIsAnalyzing(LOADING_STATUS.SUCCESS))
+    }, 3000)
+
+    // Enable analytics fetching after a short delay 
+    if (videoId && duration) {
+      setTimeout(async () => {
+        try {
+          const analyticsResult = await triggerAnalytics({ 
+            live_chat_id: 'Cg0KC25KS0ROUHMwd1A4KicKGFVDV1d3WGdnQ0F2M3BtN2dSLWk4OFAyURILbkpLRE5QczB3UDg', 
+            duration: duration 
+          }).unwrap()
+
+          dispatch(setAnalyticsData(analyticsResult))
+
+        } catch (err) {
+          alert(err?.data?.error || 'Failed to fetch analytics')
+        }
+      }, 2000)
     }
   }
+
+  
+  const isAnalyzingLoading = isAnalyzing === LOADING_STATUS.LOADING
+  
 
   return (
     <Box>
@@ -83,21 +131,22 @@ const StreamURLInput = () => {
         </Box>
         <Button
           onClick={handleAnalyze}
-          isLoading={isLoading}
-          loadingText="Analyzing..."
-          background="linear-gradient(to right,rgb(76, 136, 233), #9f7aea)"
+          loading={isAnalyzingLoading || isGettingAnalytics}
+          loadingText="Analysing..."
+          background={isAnalyzingLoading ? 'gray.600' : 'linear-gradient(to right,rgb(76, 136, 233), #9f7aea)'}
           color="white"
           fontWeight="bold"
           borderRadius="xl"
           px={6}
           height="54px"
           border="none"
-          isDisabled={!videoUrl || isLoading}
+          disabled={isAnalyzingLoading || isGettingAnalytics}
+          cursor={isAnalyzingLoading ? 'not-allowed' : 'pointer'}
           _hover={{
-            background: 'linear-gradient(to left, rgb(76, 136, 233), #9f7aea)',
+            background: isAnalyzingLoading ? 'gray.500' : 'linear-gradient(to left, rgb(76, 136, 233), #9f7aea)',
           }}
         >
-          Analyse
+          {isAnalyzingLoading ? 'Analysing...' : 'Analyse'}
         </Button>
       </Flex>
     </Box>

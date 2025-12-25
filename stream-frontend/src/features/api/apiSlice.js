@@ -20,8 +20,37 @@ export const apiSlice = createApi({
         body: { video_id: videoId },
       }),
     }),
+    
+    /**
+     * @returns {Promise<{
+     *   avg_sentiment: number,
+     *   top_topics: string[],
+     *   top_chats: string[],
+     *   top_users: Array<{user: string, no_of_messages: number}>
+     * }>}
+     */
+    getAnalytics: builder.query({
+      query: ({ live_chat_id, duration }) => ({
+        url: '/analyze',
+        method: 'POST',
+        body: { live_chat_id, duration },
+      }),
+      transformResponse: (response) => {
+        // Validate and ensure correct shape
+        return {
+          avg_sentiment: response.avg_sentiment ?? 0,
+          top_topics: Array.isArray(response.top_topics) ? response.top_topics : [],
+          top_chats: Array.isArray(response.top_chats) ? response.top_chats : [],
+          top_users: Array.isArray(response.top_users) ? response.top_users : [],
+        }
+      },
+    }),
   }),
 })
 
-export const { useStartStreamMutation } = apiSlice
+export const { 
+  useStartStreamMutation, 
+  useGetAnalyticsQuery,
+  useLazyGetAnalyticsQuery 
+} = apiSlice
 

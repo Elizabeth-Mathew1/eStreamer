@@ -1,9 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit'
+import { LOADING_STATUS } from '../../common'
 
 const initialState = {
   videoUrl: '',
-  timeRange: null, 
-  isAnalyzing: false,
+  duration: 864000, //TODO
+  isAnalyzing: LOADING_STATUS.IDLE,
+  analyticsData: null,
 }
 
 const streamSlice = createSlice({
@@ -13,16 +15,20 @@ const streamSlice = createSlice({
     setVideoUrl: (state, action) => {
       state.videoUrl = action.payload
     },
-    setTimeRange: (state, action) => {
-      state.timeRange = action.payload
+    setDuration: (state, action) => {
+      state.duration = action.payload
     },
     setIsAnalyzing: (state, action) => {
       state.isAnalyzing = action.payload
     },
+    setAnalyticsData: (state, action) => {
+      state.analyticsData = action.payload
+    },
+
   },
 })
 
-export const { setVideoUrl, setTimeRange, setIsAnalyzing } = streamSlice.actions
+export const { setVideoUrl, setDuration, setIsAnalyzing, setAnalyticsData } = streamSlice.actions
 export default streamSlice.reducer
 
 
