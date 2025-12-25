@@ -45,12 +45,21 @@ export const apiSlice = createApi({
         }
       },
     }),
+ getKeyMoments: builder.mutation({
+      query: (videoId) => ({
+        url: '/download', // Adjust endpoint as needed
+        method: 'POST',
+        body: { video_id: videoId },
+      }),
+    }),
   }),
 })
 
 export const { 
   useStartStreamMutation, 
   useGetAnalyticsQuery,
-  useLazyGetAnalyticsQuery 
+  useLazyGetAnalyticsQuery,
+  useGetKeyMomentsMutation
+  
 } = apiSlice
 
