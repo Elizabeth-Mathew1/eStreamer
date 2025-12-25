@@ -39,11 +39,11 @@ def generate_summary(chat_id, start_time):
     message_count = random.randint(10, 500)
 
     sentiments = [
-        "positive",
-        "negative",
-        "neutral",
-        "highly positive",
-        "highly negative",
+        0.1,
+        1,
+        -0.1,
+        0.5,
+        -0.5,
     ]
     avg_sentiment = random.choice(sentiments)
 
@@ -112,7 +112,7 @@ def ingest_dummy_data(firestore_db):
     start_time = START_TIME
 
     while start_time <= END_TIME:
-        live_chat_id = f"chat_{random.randint(10, 999)}"
+        live_chat_id = CHAT_ID
         chat_summary = generate_summary(chat_id=live_chat_id, start_time=start_time)
 
         doc_id = f"{CHAT_ID}_T_{start_time.strftime('%Y%m%d%H%M')}"
