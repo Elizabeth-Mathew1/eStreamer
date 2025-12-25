@@ -2,20 +2,13 @@ import React from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { Box, Button, Flex, Text } from '@chakra-ui/react'
 import { IoTimeOutline } from 'react-icons/io5'
-import { setTimeRange } from '../features/stream/streamSlice'
+import { setDuration } from '../features/stream/streamSlice'
+import { TIME_RANGES } from '../common'
 
-const TIME_RANGES = [
-  { label: 'Last 5 minutes', seconds: 300 },
-  { label: 'Last 10 minutes', seconds: 600 },
-  { label: 'Last 30 minutes', seconds: 1800 },
-  { label: 'Last 60 minutes', seconds: 3600 },
-  { label: 'Last 2 hours', seconds: 7200 },
-  { label: 'All time', seconds: null },
-]
 
 const TimeRangeSelector = () => {
   const dispatch = useDispatch()
-  const selectedTimeRange = useSelector((state) => state.stream.timeRange)
+  const selectedDuration = useSelector((state) => state.stream.duration)
 
   return (
     <Box mt={8}>
@@ -30,15 +23,15 @@ const TimeRangeSelector = () => {
         {TIME_RANGES.map(({ label, seconds }, index) => (
           <Button
             key={seconds}   
-            onClick={() => dispatch(setTimeRange(seconds))}
+            onClick={() => dispatch(setDuration(seconds))}
             background={
-              selectedTimeRange === seconds
+              selectedDuration === seconds
                 ? 'linear-gradient(to right, rgb(42, 20, 183), #9f7aea)'
                 : 'transparent'
             }
             color="white"
-            border={selectedTimeRange === seconds ? 'none' : '2px solid'}
-            borderColor={selectedTimeRange === seconds ? 'transparent' : 'gray.600'}
+            border={selectedDuration === seconds ? 'none' : '2px solid'}
+            borderColor={selectedDuration === seconds ? 'transparent' : 'gray.600'}
             borderRadius="lg"
             px={6}
             py={2}
@@ -46,7 +39,7 @@ const TimeRangeSelector = () => {
             fontSize="14px"
             fontWeight="medium"
             _hover={{
-              borderColor: selectedTimeRange === seconds ? 'transparent' : 'gray.500',
+              borderColor: selectedDuration === seconds ? 'transparent' : 'gray.500',
             }}
           >
             {label}
