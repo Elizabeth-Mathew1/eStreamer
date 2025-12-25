@@ -1,10 +1,18 @@
+import logging
+import json
 from datetime import datetime, timedelta, timezone
 from typing import Any
 import google.generativeai as genai
-import json
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from settings import GEMINI_API_KEY, FIRESTORE_DB_NAME, COLLECTION_NAME
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 class PredictionController:
@@ -71,6 +79,10 @@ class PredictionController:
         now = datetime.now(timezone.utc)
         five_minutes_ago = now - timedelta(minutes=5)
 
+        logger.info(
+            f"[Predictor] Fetching last 5 mins of chat history for: {live_chat_id}"
+        )
+
         query = (
             self.db.collection(COLLECTION_NAME)
             .where(filter=FieldFilter("live_chat_id", "==", live_chat_id))
@@ -96,9 +108,10 @@ class PredictionController:
             messages.append(self._serialize_firestore_data(history))
 
         if not messages:
-            print("No recent chat history found for prediction.")
+            logger.warning("[Predictor] No recent chat history found. Cannot predict.")
             return None
 
+        logger.info(f"[Predictor] Retrieved {len(messages)} history points.")
         return messages
 
     def generate_prediction(self, live_chat_id: str) -> dict[str, Any] | None:
@@ -113,6 +126,8 @@ class PredictionController:
         try:
             history_json_string = json.dumps(message_history, indent=2)
 
+            logger.info("🧠 [Predictor] Sending data to Gemini for analysis...")
+
             response = self.model.generate_content(
                 history_json_string,
                 generation_config=genai.GenerationConfig(
@@ -122,8 +137,12 @@ class PredictionController:
             )
 
             prediction_data = json.loads(response.text)
+
+            logger.info(
+                f"[Predictor] Prediction generated! Strategy: '{prediction_data.get('strategy')}'"
+            )
             return prediction_data
 
         except Exception as e:
-            print(f"Error generating prediction: {e}")
+            logger.error(f"[Predictor] Gemini Error: {e}")
             return None

@@ -9,9 +9,10 @@ import base64
 from flask import Flask, request
 from datetime import datetime
 from dateutil import parser
+from google.cloud import firestore
 
-import proto.stream_list_pb2 as stream_list_pb2
-import proto.stream_list_pb2_grpc as stream_list_pb2_grpc
+import grpc_proto.stream_list_pb2 as stream_list_pb2
+import grpc_proto.stream_list_pb2_grpc as stream_list_pb2_grpc
 
 
 from google.oauth2.credentials import Credentials
@@ -36,6 +37,11 @@ KAFKA_BOOTSTRAP_SERVERS = os.environ.get("KAFKA_BOOTSTRAP_SERVERS")
 KAFKA_API_KEY = os.environ.get("KAFKA_API_KEY")
 KAFKA_API_SECRET = os.environ.get("KAFKA_API_SECRET")
 KAFKA_TOPIC = os.environ.get("KAFKA_TOPIC")
+FIRESTORE_DB_NAME = os.environ.get("FIRESTORE_DB_NAME")
+FIRESTORE_COLLECTION_NAME = os.environ.get("FIRESTORE_COLLECTION_NAME")
+
+
+db = firestore.Client(database=FIRESTORE_DB_NAME)
 
 
 # --- Logging Configuration ---
@@ -96,7 +102,7 @@ def create_kafka_producer():
         "client.id": "youtube-chat-processor",
         "retries": 3,
         "linger.ms": 1000,
-        "batch.size": 50000,  # 50KB accommodates approx 200 chat messages.
+        "batch.size": 50000,
         "delivery.timeout.ms": 30000,
     }
 
@@ -143,6 +149,29 @@ def get_live_chat_id(video_id: str) -> str | None:
             logger.error(f"No live chat id found for video {video_id}")
             return None
 
+        logger.info(f"SUCCESS: Retrieved Live Chat ID: {live_chat_id}")
+
+        item = response["items"][0]
+        snippet = item.get("snippet", {})
+        details = item.get("liveStreamingDetails", {})
+        start_time = details.get("actualStartTime")
+        if not start_time:
+            start_time = details.get("scheduledStartTime")
+
+        stream_data = {
+            "live_video_url": f"https://www.youtube.com/watch?v={video_id}",
+            "video_id": video_id,
+            "stream_start_time": start_time,
+            "stream_name": snippet.get("title"),
+            "channel_name": snippet.get("channelTitle"),
+            "live_chat_id": live_chat_id,
+            "last_updated": firestore.SERVER_TIMESTAMP,
+        }
+
+        doc_ref = db.collection(FIRESTORE_COLLECTION_NAME).document(video_id)
+        doc_ref.set(stream_data, merge=True)
+
+        logger.info(f"Saved metadata for '{stream_data['stream_name']}' to Firestore.")
         logger.info(f"SUCCESS: Retrieved Live Chat ID: {live_chat_id}")
         return live_chat_id
 
@@ -342,4 +371,4 @@ def index():
 # The Cloud Run environment will provide the PORT variable
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)  # nosec B104

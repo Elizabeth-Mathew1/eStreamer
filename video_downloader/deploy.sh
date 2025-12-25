@@ -1,4 +1,4 @@
-gcloud run deploy stream-server \
+gcloud run deploy video-downloader \
   --source . \
   --platform managed \
   --region us-central1 \

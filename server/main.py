@@ -1,9 +1,13 @@
 import os
 import json
+import threading
+
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from google.cloud import pubsub_v1
 
-from routers import prediction_router
+from controllers import VideoStatusController
+from routers import prediction_router, analyze_router, download_router, poll_router
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 TOPIC_ID = os.environ.get("PUBSUB_TOPIC_ID")
@@ -12,8 +16,20 @@ publisher = pubsub_v1.PublisherClient()
 topic_path = publisher.topic_path(PROJECT_ID, TOPIC_ID)
 
 app = Flask(__name__)
+CORS(app)
+
+listener_thread = threading.Thread(
+    target=VideoStatusController().start_result_listener, daemon=True
+)
+listener_thread.start()
 
 app.register_blueprint(prediction_router)
+
+app.register_blueprint(analyze_router)
+
+app.register_blueprint(download_router)
+
+app.register_blueprint(poll_router)
 
 
 @app.route("/video_id", methods=["POST"])
