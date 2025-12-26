@@ -9,7 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 
 COPY main.py .
-COPY protos /app/protos
+COPY grpc_proto /app/protos
 
 
 ENV PORT 8080
