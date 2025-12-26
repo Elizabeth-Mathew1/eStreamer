@@ -11,11 +11,11 @@ def predict_route():
         if not data:
             return jsonify({"error": "Invalid JSON body"}), 400
 
-        live_video_url = data.get("live_video_url")
-        if not live_video_url:
-            return jsonify({"error": "Missing 'live_video_url'"}), 400
+        video_id = data.get("video_id")
+        if not video_id:
+            return jsonify({"error": "Missing 'video_id'"}), 400
 
-        controller = DownloadController(live_video_url=live_video_url)
+        controller = DownloadController(video_id=video_id)
         result = controller.download()
 
         return jsonify(result), 200

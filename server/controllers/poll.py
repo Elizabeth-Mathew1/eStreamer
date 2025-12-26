@@ -43,6 +43,7 @@ class VideoStatusPollController:
         total = data.get("total_clips_expected", 1)
         completed = data.get("clips_completed_count", 0)
         failed = data.get("failed_clips", 0)
+        overall_sentiment = data.get("overall_sentiment_percentage", 0)
 
         percent = int((completed / total) * 100) if total > 0 else 0
 
@@ -61,4 +62,5 @@ class VideoStatusPollController:
             },
             "video_urls": data.get("video_urls", []),
             "created_at": data.get("created_at"),
+            "overall_sentiment": overall_sentiment,
         }
