@@ -157,6 +157,8 @@ def get_live_chat_id(video_id: str) -> str | None:
         start_time = details.get("actualStartTime")
         if not start_time:
             start_time = details.get("scheduledStartTime")
+        if start_time and isinstance(start_time, str):
+            start_time = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
 
         stream_data = {
             "live_video_url": f"https://www.youtube.com/watch?v={video_id}",
