@@ -30,10 +30,10 @@ export const apiSlice = createApi({
      * }>}
      */
     getAnalytics: builder.query({
-      query: ({ live_chat_id, duration }) => ({
+      query: ({ video_id, duration }) => ({
         url: '/analyze',
         method: 'POST',
-        body: { live_chat_id, duration },
+        body: { video_id, duration },
       }),
       transformResponse: (response) => {
         // Validate and ensure correct shape
@@ -47,19 +47,31 @@ export const apiSlice = createApi({
     }),
  getKeyMoments: builder.mutation({
       query: (videoId) => ({
-        url: '/download', // Adjust endpoint as needed
+        url: '/download',
         method: 'POST',
         body: { video_id: videoId },
       }),
     }),
+
+    // Poll endpoint - checks job status
+    pollKeyMomentsStatus: builder.mutation({
+      query: (videoUrl) => ({
+        url: 'video/poll',
+        method: 'GET',
+        params: { live_video_url: videoUrl }
+      }),
+    }),
+
   }),
 })
+
 
 export const { 
   useStartStreamMutation, 
   useGetAnalyticsQuery,
   useLazyGetAnalyticsQuery,
-  useGetKeyMomentsMutation
+  useGetKeyMomentsMutation,
+  usePollKeyMomentsStatusMutation
   
 } = apiSlice
 
