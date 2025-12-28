@@ -5,7 +5,12 @@ from typing import Any
 import google.generativeai as genai
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
-from settings import GEMINI_API_KEY, FIRESTORE_DB_NAME, COLLECTION_NAME
+from settings import (
+    GEMINI_API_KEY,
+    FIRESTORE_DB_NAME,
+    COLLECTION_NAME,
+    FIRESTORE_COLLECTION_STREAM_METADATA,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -114,10 +119,23 @@ class PredictionController:
         logger.info(f"[Predictor] Retrieved {len(messages)} history points.")
         return messages
 
-    def generate_prediction(self, live_chat_id: str) -> dict[str, Any] | None:
+    def generate_prediction(self, video_id: str) -> dict[str, Any] | None:
         """
         Takes history data, sends it to Gemini, and returns structured JSON.
         """
+        logger.info(f"[Prediction] Starting  prediction for Video ID: {video_id}")
+
+        query = self.db.collection(FIRESTORE_COLLECTION_STREAM_METADATA).where(
+            filter=FieldFilter("video_id", "==", video_id)
+        )
+
+        doc = next(query.stream(), None)
+
+        if doc:
+            live_chat_id = doc.get("live_chat_id")
+        else:
+            raise Exception("Video ID not found in stream metadata")
+
         message_history = self.fetch_chat_history(live_chat_id=live_chat_id)
 
         if message_history is None:
