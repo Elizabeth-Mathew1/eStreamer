@@ -1,0 +1,5 @@
+flask
+yt-dlp  
+google-cloud-speech>=2.0.0
+python-dotenv
+confluent-kafka
