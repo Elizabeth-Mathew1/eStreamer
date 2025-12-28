@@ -47,7 +47,7 @@ class AnalyzerController:
         return False
 
     def analyze(self):
-        logger.info(f"🔍 [Analyzer] Starting analysis for Chat ID: {self.live_chat_id}")
+        logger.info(f"🔍 [Analyzer] Starting analysis for Video ID: {self.video_id}")
         logger.info(f"⏱️ [Analyzer] Window duration: {self.duration_seconds} seconds")
 
         query = self.db.collection(FIRESTORE_COLLECTION_STREAM_METADATA).where(

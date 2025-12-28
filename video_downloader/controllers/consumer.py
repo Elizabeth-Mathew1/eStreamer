@@ -36,7 +36,7 @@ class VideoTimeStampConsumerController:
             "sasl.mechanisms": "PLAIN",
             "sasl.username": KAFKA_API_KEY,
             "sasl.password": KAFKA_API_SECRET,
-            "group.id": "video-consumer",
+            "group.id": "video-consumer-3",
             "auto.offset.reset": "earliest",
             "enable.auto.commit": False,
         }
@@ -134,7 +134,7 @@ class VideoTimeStampConsumerController:
         if temp_cookie_path:
             ydl_opts["cookiefile"] = temp_cookie_path
 
-        logger.debug(f"yt-dlp options: {ydl_opts}")
+        logger.info(f"yt-dlp options: {ydl_opts}")
 
         try:
             logger.info(f"Executing yt-dlp for Job {job_id}...")

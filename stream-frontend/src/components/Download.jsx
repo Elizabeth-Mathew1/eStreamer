@@ -18,8 +18,9 @@ import { useSelector } from 'react-redux'
 import { useGetKeyMomentsMutation, usePollKeyMomentsStatusMutation } from '../features/api/apiSlice'
 
 const getSentimentInfo = (avgSentiment) => {
-  // Convert -1 to 1 range to 0-100, or if already 0-100, use as is
-  const score = avgSentiment > 1 ? Math.round(((avgSentiment + 1) / 2) * 100) : Math.round(avgSentiment)
+const score = (avgSentiment >= -1 && avgSentiment <= 1) 
+  ? Math.round(((avgSentiment + 1) / 2) * 100) // It's small (-1 to 1), so convert it
+  : Math.round(avgSentiment);                  // It's big (0-100), so use as is
   
   let label, Icon
   if (score >= 80) {
