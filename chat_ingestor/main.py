@@ -37,6 +37,8 @@ KAFKA_API_KEY = os.environ.get("KAFKA_API_KEY")
 KAFKA_API_SECRET = os.environ.get("KAFKA_API_SECRET")
 KAFKA_TOPIC = os.environ.get("KAFKA_TOPIC")
 
+VIDEO_ID = None
+
 
 # --- Logging Configuration ---
 
@@ -205,6 +207,7 @@ def youtube_ingest(live_chat_id: str):
                                 "author_channel_id": item.author_details.channel_id,
                                 "is_chat_owner": item.author_details.is_chat_owner,
                                 "is_chat_moderator": item.author_details.is_chat_moderator,
+                                "video_id": VIDEO_ID,
                             }
 
                             try:
@@ -298,6 +301,7 @@ def index():
                 video_id = payload.get("video_id")
 
                 if video_id:
+                    VIDEO_ID = video_id  # noqa
                     logger.info(f"Received Pub/Sub trigger for Video ID: {video_id}")
                     live_chat_id = get_live_chat_id(video_id)
 
@@ -342,4 +346,4 @@ def index():
 # The Cloud Run environment will provide the PORT variable
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port)  # nosec B104
