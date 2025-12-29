@@ -7,7 +7,13 @@ from flask_cors import CORS
 from google.cloud import pubsub_v1
 
 from controllers import VideoStatusController
-from routers import prediction_router, analyze_router, download_router, poll_router
+from routers import (
+    prediction_router,
+    analyze_router,
+    download_router,
+    poll_router,
+    correlate_router,
+)
 
 PROJECT_ID = os.environ.get("GCP_PROJECT_ID")
 TOPIC_ID = os.environ.get("PUBSUB_TOPIC_ID")
@@ -30,6 +36,8 @@ app.register_blueprint(analyze_router)
 app.register_blueprint(download_router)
 
 app.register_blueprint(poll_router)
+
+app.register_blueprint(correlate_router)
 
 
 @app.route("/video_id", methods=["POST"])
