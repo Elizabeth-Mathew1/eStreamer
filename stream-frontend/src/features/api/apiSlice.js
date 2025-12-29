@@ -62,6 +62,14 @@ export const apiSlice = createApi({
       }),
     }),
 
+    
+    getPrediction: builder.mutation({
+      query: (videoId) => ({
+        url: '/predict',
+        method: 'POST',
+        body: { video_id: videoId },
+      }),
+    }),
   }),
 })
 
@@ -71,7 +79,8 @@ export const {
   useGetAnalyticsQuery,
   useLazyGetAnalyticsQuery,
   useGetKeyMomentsMutation,
-  usePollKeyMomentsStatusMutation
+  usePollKeyMomentsStatusMutation,
+  useGetPredictionMutation
   
 } = apiSlice
 

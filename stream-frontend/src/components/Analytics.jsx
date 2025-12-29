@@ -6,6 +6,7 @@ import TopChats from './TopChats'
 import MostActiveUsers from './MostActiveUsers'
 import HotTopics from './HotTopics'
 import { LOADING_STATUS } from '../common'
+import PredictiveAnalysis from './PredictiveAnalysis'
 
 
 
@@ -19,9 +20,10 @@ function Analytics() {
     }
     else if (isAnalyzing === LOADING_STATUS.SUCCESS) {
         return (
-            <Box>
+            <Box>  
+                <PredictiveAnalysis />
                 <SentimentBox />
-          
+              
                 <Flex pt={6} gap={6} align="stretch" height="500px">
                     <TopChats />
                     <MostActiveUsers />
