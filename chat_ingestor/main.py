@@ -43,6 +43,8 @@ FIRESTORE_COLLECTION_NAME = os.environ.get("FIRESTORE_COLLECTION_NAME")
 
 db = firestore.Client(database=FIRESTORE_DB_NAME)
 
+VIDEO_ID = None
+
 
 # --- Logging Configuration ---
 
@@ -236,6 +238,7 @@ def youtube_ingest(live_chat_id: str):
                                 "author_channel_id": item.author_details.channel_id,
                                 "is_chat_owner": item.author_details.is_chat_owner,
                                 "is_chat_moderator": item.author_details.is_chat_moderator,
+                                "video_id": VIDEO_ID,
                             }
 
                             try:
@@ -329,6 +332,7 @@ def index():
                 video_id = payload.get("video_id")
 
                 if video_id:
+                    VIDEO_ID = video_id  # noqa
                     logger.info(f"Received Pub/Sub trigger for Video ID: {video_id}")
                     live_chat_id = get_live_chat_id(video_id)
 

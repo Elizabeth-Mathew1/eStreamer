@@ -3,4 +3,6 @@ gcloud run deploy stream-server \
   --platform managed \
   --region us-central1 \
   --allow-unauthenticated \
-  --service-account="$SERVICE_ACCOUNT_EMAIL" \
+  --service-account="$SERVICE_ACCOUNT_EMAIL"
+   
+ 
