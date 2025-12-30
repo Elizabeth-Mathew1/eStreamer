@@ -70,6 +70,42 @@ export const apiSlice = createApi({
         body: { video_id: videoId },
       }),
     }),
+    
+    /**
+     * @returns {Promise<{
+     *   audio_data: {
+     *     audio_summary: string,
+     *     audio_sentiment: number
+     *   },
+     *   correlated_chat_data: {
+     *     correlated_chat_volume: number,
+     *     correlated_users: number,
+     *     correlated_chats: string[]
+     *   }
+     * }>}
+     */
+    getCorrelation: builder.query({
+      query: (videoId) => ({
+        url: '/correlate',
+        method: 'GET',
+        params: { video_id: videoId },
+      }),
+      transformResponse: (response) => {
+        return {
+          audio_data: {
+            audio_summary: response.audio_data?.audio_summary ?? '',
+            audio_sentiment: response.audio_data?.audio_sentiment ?? 0,
+          },
+          correlated_chat_data: {
+            correlated_chat_volume: response.correlated_chat_data?.correlated_chat_volume ?? 0,
+            correlated_users: response.correlated_chat_data?.correlated_users ?? 0,
+            correlated_chats: Array.isArray(response.correlated_chat_data?.correlated_chats) 
+              ? response.correlated_chat_data.correlated_chats 
+              : [],
+          },
+        }
+      },
+    }),
   }),
 })
 
@@ -80,7 +116,8 @@ export const {
   useLazyGetAnalyticsQuery,
   useGetKeyMomentsMutation,
   usePollKeyMomentsStatusMutation,
-  useGetPredictionMutation
-  
+  useGetPredictionMutation,
+  useGetCorrelationQuery,
+  useLazyGetCorrelationQuery
 } = apiSlice
 
