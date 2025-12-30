@@ -68,7 +68,7 @@ const StreamURLInput = () => {
     // Set analyzing to false after 1 minute (60 seconds)
     setTimeout(() => {
       dispatch(setIsAnalyzing(LOADING_STATUS.SUCCESS))
-    }, 3000)
+    }, 60000)
 
     // Enable analytics fetching after a short delay 
     if (videoId && duration) {
@@ -84,7 +84,7 @@ const StreamURLInput = () => {
         } catch (err) {
           alert(err?.data?.error || 'Failed to fetch analytics')
         }
-      }, 2000)
+      }, 65000)
     }
   }
 

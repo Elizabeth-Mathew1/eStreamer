@@ -51,4 +51,16 @@ body {
   }
 }
 
+/* Live icon pulse animation */
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(154, 110, 243, 0.8));
+  }
+  50% {
+    opacity: 0.7;
+    filter: drop-shadow(0 0 12px rgba(154, 110, 243, 1));
+  }
+}
+
 

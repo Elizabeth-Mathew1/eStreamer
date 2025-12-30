@@ -5,6 +5,7 @@ import SentimentBox from './SentimentBox'
 import TopChats from './TopChats'
 import MostActiveUsers from './MostActiveUsers'
 import HotTopics from './HotTopics'
+import LiveSyncFeed from './LiveSyncFeed'
 import { LOADING_STATUS } from '../common'
 import PredictiveAnalysis from './PredictiveAnalysis'
 
@@ -23,6 +24,7 @@ function Analytics() {
             <Box>  
                 <PredictiveAnalysis />
                 <SentimentBox />
+                <LiveSyncFeed />
               
                 <Flex pt={6} gap={6} align="stretch" height="500px">
                     <TopChats />

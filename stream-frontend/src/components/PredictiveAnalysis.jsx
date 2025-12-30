@@ -152,6 +152,7 @@ const PredictiveAnalysis = () => {
         borderRadius="xl"
         p={6}
         mb={6}
+        mt={6}
       >
         <Flex align="center" gap={3}>
           <Spinner size="md" color="white" />
@@ -171,6 +172,7 @@ const PredictiveAnalysis = () => {
         borderRadius="xl"
         p={6}
         mb={6}
+        mt={6}
       >
         <Text color="white" fontSize="md" fontWeight="medium">
           Prediction Error: {error}
@@ -197,42 +199,62 @@ const PredictiveAnalysis = () => {
       borderRadius="xl"
       p={6}
       mb={6}
+      mt={6}
       boxShadow="0 4px 6px rgba(0, 0, 0, 0.1)"
     >
-      <Text color="white" fontSize="lg" fontWeight="bold" mb={4}>
-        Predictive Analytics
-      </Text>
+      <Flex align="center" gap={2} mb={4}>
+        <StrategyIcon size={24} color="white" />
+        <Text color="white" fontSize="20px" fontWeight="semibold">
+          Predictive Analytics
+        </Text>
+      </Flex>
 
       <Flex direction={{ base: 'column', md: 'row' }} gap={6} align="stretch">
         {/* Left Side - Recommended Action */}
-        <Box flex={1}>
+        <Box flex={1} display="flex" flexDirection="column">
           <Flex align="center" gap={2} mb={2}>
-            <StrategyIcon size={24} color="white" />
+            
             <Text color="white" fontSize="sm" fontWeight="medium" textTransform="uppercase">
               Recommended Action
             </Text>
           </Flex>
-          <Text color="white" fontSize="2xl" fontWeight="bold" mb={2}>
-            {strategy}
-          </Text>
+          <Box 
+            border="1px solid rgba(255, 255, 255, 0.3)" 
+            borderRadius="xl" 
+            p={2}
+            flex={1}
+            display="flex"
+            alignItems="center"
+          >
+            <Text color="white" fontSize="18px" fontWeight="semibold">
+              {strategy}
+            </Text>
+          </Box>
         </Box>
 
         {/* Right Side - Predicted Sentiment */}
-        <Box flex={1}>
+        <Box flex={1} display="flex" flexDirection="column">
           <Text color="white" fontSize="sm" fontWeight="medium" mb={2} textTransform="uppercase">
             Predicted Sentiment
           </Text>
-          <Flex align="baseline" gap={2} mb={1}>
-            <Text color="white" fontSize="3xl" fontWeight="bold">
-              {sentimentScore}
+          <Box 
+            border="1px solid rgba(255, 255, 255, 0.3)" 
+            borderRadius="xl" 
+            p={2}
+            flex={1}
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+          >
+            <Flex align="baseline" gap={2} mb={1}>
+              <Text color="white" fontSize="20px" fontWeight="semibold">
+                {sentimentScore} / 100
+              </Text>
+            </Flex>
+            <Text color="white" fontSize="md" fontWeight="medium">
+              {label}
             </Text>
-            <Text color="white" fontSize="lg" opacity={0.9}>
-              / 100
-            </Text>
-          </Flex>
-          <Text color="white" fontSize="md" fontWeight="medium" mb={2}>
-            {label}
-          </Text>
+          </Box>
         </Box>
       </Flex>
 
