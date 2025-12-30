@@ -75,7 +75,7 @@ const StreamURLInput = () => {
       setTimeout(async () => {
         try {
           const analyticsResult = await triggerAnalytics({ 
-            live_chat_id: 'Cg0KC25KS0ROUHMwd1A4KicKGFVDV1d3WGdnQ0F2M3BtN2dSLWk4OFAyURILbkpLRE5QczB3UDg', 
+            video_id: videoId, 
             duration: duration 
           }).unwrap()
 

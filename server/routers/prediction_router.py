@@ -9,13 +9,13 @@ def predict_route():
     try:
         req_data = request.get_json()
 
-        if not req_data or "live_chat_id" not in req_data:
-            return jsonify({"error": "Missing field: live_chat_id"}), 400
+        if not req_data or "video_id" not in req_data:
+            return jsonify({"error": "Missing field: video_id"}), 400
 
-        live_chat_id = req_data["live_chat_id"]
+        video_id = req_data["video_id"]
 
         controller = PredictionController()
-        result = controller.generate_prediction(live_chat_id=live_chat_id)
+        result = controller.generate_prediction(video_id=video_id)
 
         if result is None:
             return jsonify(
