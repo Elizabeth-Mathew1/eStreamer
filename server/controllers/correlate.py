@@ -17,7 +17,7 @@ class CorrelationController:
         Fetches data and returns a JSON Response object directly.
         """
         query = self.db.collection(FIRESTORE_COLLECTION_STREAM_METADATA).where(
-            filter=FieldFilter("video_id", "==", self.video_id)
+            filter=FieldFilter("video_id", "==", video_id)
         )
 
         doc = next(query.stream(), None)
@@ -36,32 +36,23 @@ class CorrelationController:
         docs = list(query.stream())
 
         if not docs:
-            return jsonify(
-                {
-                    "audio_data": {
-                        "audio_summary": "Waiting for data...",
-                        "audio_sentiment": 0.0,
-                    },
-                    "correlated_chat_data": {
-                        "correlated_chat_volume": 0,
-                        "correlated_users": 0,
-                        "correlated_chats": [],
-                    },
-                }
-            )
+            return {
+                "audio_data": {
+                    "audio_summary": "Waiting for data...",
+                    "audio_sentiment": 0.0,
+                },
+                "correlated_chat_data": {
+                    "correlated_chat_volume": 0,
+                    "correlated_users": 0,
+                    "correlated_chats": [],
+                },
+            }
 
-        data = docs[0].to_dict()
+        data = docs[0].to_dict()    
+        audio_data = data.get("audio_data", {})
+        correlated_chat_data = data.get("correlated_chat_data", {})
 
-        response_payload = {
-            "audio_data": {
-                "audio_summary": data.get("audio_transcript", "No summary available"),
-                "audio_sentiment": data.get("avg_sentiment", 0.0),
-            },
-            "correlated_chat_data": {
-                "correlated_chat_volume": data.get("message_count", 0),
-                "correlated_users": data.get("unique_authors_count", 0),
-                "correlated_chats": data.get("top_messages", []),
-            },
+        return {
+            "audio_data": audio_data,
+            "correlated_chat_data": correlated_chat_data,
         }
-
-        return jsonify(response_payload)
