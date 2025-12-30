@@ -87,43 +87,88 @@ def get_kafka_consumer():
         return None
 
 
-def analyze_with_gemini(messages_list):
+def analyze_with_gemini(messages_list, audio_transcripts):
     if not GEMINI_API_KEY:
         logger.error("GEMINI_API_KEY is missing. Skipping analysis.")
-        return {"avg_sentiment": 0.0, "top_topics": ["No Analysis"], "key_phrases": []}
+        return {
+            "avg_sentiment": 0.0,
+            "audio_sentiment": 0.0,
+            "top_topics": ["No Analysis"],
+            "key_phrases": [],
+            "correlated_chats": [],
+            "unique_correlated_users": 0,
+            "correlated_chat_volume": 0,
+            "audio_summary": ""
+        }
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
 
     formatted_messages = [
         f"{m['author_display_name']}: {m['message']}" for m in messages_list
     ]
-    combined_text = ",".join(formatted_messages)
+    combined_chat_text = ",".join(formatted_messages)
+    combined_audio_text = "\n".join([f"- {text}" for text in audio_transcripts])
+
 
     system_prompt = (
-        "You are an expert stream data analyst. Analyze the following 1-minute batch of chat "
-        "messages for sentiment and key themes. Respond ONLY with a valid JSON object."
+        "You are an expert livestream data analyst. You are provided with a list of the streamer's "
+        "audio transcripts and a list of viewer chat messages. Your task is to analyze the "
+        "relationship between what the streamer says and how the chat reacts."
+        "you also have to individually analyse the chat messages"
     )
 
     user_query = (
-        "Analyze these chat messages and return the results in the JSON format defined by the schema. "
-        "Calculate the 'avg_sentiment' (float from -1.0 for negative to 1.0 for positive). "
-        "Identify up to 3 'top_topics' (strings) and up to 5 'key_phrases' (strings)."
-        f"\n\nMessages:\n{combined_text}"
+        "Analyze the following stream data:\n\n"
+        f"### STREAMER TRANSCRIPTS:\n{combined_audio_text}\n\n"
+        f"### VIEWER CHAT:\n{combined_chat_text}\n\n"
+        "If there are no transcripts, then ignore the 'audio_sentiment' and 'audio_summary' and 'correlated_chats' and 'unique_correlated_users' and 'correlated_chat_volume' and return 0,"",[],[],0 respectively"
+        "Required Analysis:\n"
+        "1. Calculate 'avg_sentiment' for the chat (-1.0 to 1.0).\n"
+        "2. Calculate 'audio_sentiment' from the transcripts (-1.0 to 1.0).\n"
+        "3. Identify 'top_topics' discussed in the chat messages.\n"
+        "4. Identify 'correlated_chats': a list of dictionary objects containing chat messages (with sender and message) where the viewers"
+        "are directly responding to or mentioning topics found in the streamer's transcripts.\n"
+        "5. Count 'unique_correlated_users' who sent those specific messages."
+        "6. Identify 'key_phrases' discussed in the chat messages."
+        "7. Make a 'audio_summary' of the streamer's transcripts it whould be maximum 12-15 words long and should be a single sentence."
+        "8. Calculate total 'correlated_chat_volume', may not be distinct."
     )
+
 
     # Define the expected JSON output schema
     json_schema = {
         "type": "OBJECT",
         "properties": {
-            "avg_sentiment": {
-                "type": "NUMBER",
-                "description": "Average sentiment score between -1.0 and 1.0.",
-            },
+            "avg_sentiment": {"type": "NUMBER"},
+            "audio_sentiment": {"type": "NUMBER"},
             "top_topics": {"type": "ARRAY", "items": {"type": "STRING"}},
             "key_phrases": {"type": "ARRAY", "items": {"type": "STRING"}},
+            "audio_summary": {"type": "STRING"},
+            "correlated_chats": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "sender": {"type": "STRING"},
+                        "message": {"type": "STRING"}
+                    },
+                    "required": ["sender", "message"]
+                }
+            },
+            "unique_correlated_users": {"type": "INTEGER"},
+            "correlated_chat_volume": {"type": "INTEGER"}
         },
-        "required": ["avg_sentiment", "top_topics", "key_phrases"],
+        "required": [
+            "avg_sentiment", 
+            "audio_sentiment", 
+            "top_topics", 
+            "correlated_chats", 
+            "unique_correlated_users",
+            "correlated_chat_volume",
+            "audio_summary"
+        ],
     }
+
 
     payload = {
         "contents": [{"parts": [{"text": user_query}]}],
@@ -171,43 +216,54 @@ def process_batch(db, msg_value):
         data = json.loads(msg_value)
 
         live_chat_id = data.get("live_chat_id")
-        messages = data.get("messages", [])
+
+        combined_transcripts = data.get("combined_transcript", [])
+        chat_messages = data.get("chat_messages", [])
         count = data.get("message_count")
 
         window_end_ms = data.get("window_end")  ## in epoch milliseconds
+        window_start_ms = data.get("window_start")  ## in epoch milliseconds
 
-        epoch_seconds = window_end_ms / 1000.0
-        window_end_dt = datetime.fromtimestamp(epoch_seconds, tz=timezone.utc)
-        window_start_dt = window_end_dt - timedelta(
-            minutes=1
-        )  ## batching happens by flink in 1 minute windows
+        window_end_dt = datetime.fromtimestamp(window_end_ms / 1000.0, tz=timezone.utc)
+        window_start_dt = datetime.fromtimestamp(window_start_ms / 1000.0, tz=timezone.utc)
 
         logger.info(
-            f"Processing batch for {live_chat_id} | Start: {window_start_dt.isoformat()} | Count: {count}"
+            f"Processing batch for {live_chat_id} | Start: {window_start_dt.isoformat()} | Chat Count: {count}"
         )
 
-        analysis = analyze_with_gemini(messages)
+        analysis = analyze_with_gemini(chat_messages, combined_transcripts)
 
         # Doc ID must be deterministic and unique (chat_id + window_start_time)
         doc_id = f"{live_chat_id}_{window_start_dt.strftime('%Y%m%d%H%M')}"
 
         doc_data = {
             "live_chat_id": live_chat_id,
-            # Firestore will store these datetime objects correctly as Timestamps
             "window_start_time": window_start_dt,
             "window_end_time": window_end_dt,
             "message_count": count,
-            "messages": messages,
+            "messages": chat_messages,
             "avg_sentiment": analysis.get("avg_sentiment", 0.0),
-            # Prepare topics for the Retrieval API's aggregation function
             "top_topics": [
                 {"name": t, "count": 1} for t in analysis.get("top_topics", [])
             ],
             "key_phrases": analysis.get("key_phrases", []),
+
+            ## correlated data
+            "audio_data": {
+                "audio_sentiment": analysis.get("audio_sentiment", 0.0),
+                "audio_summary": analysis.get("audio_summary", ""),
+            },
+            "correlated_chat_data": {
+                "correlated_chats": analysis.get("correlated_chats", []),
+                "correlated_users": analysis.get("unique_correlated_users", 0),
+                "correlated_chat_volume": analysis.get("correlated_chat_volume", 0),    
+            }
+        
         }
 
 
         db.collection(COLLECTION_NAME).document(doc_id).set(doc_data)
+        # logger.info(f"Inserted data to Firestore: {doc_data}")
         logger.info(f"Saved analysis to Firestore: {doc_id}")
 
     except Exception as e:
@@ -242,7 +298,7 @@ def run_consumer(db):
                 logger.warning("Received message with None value, skipping")
                 continue
 
-            print(msg_value.decode("utf-8"))
+            # print(msg_value.decode("utf-8"))
 
             process_batch(db, msg_value.decode("utf-8"))
 

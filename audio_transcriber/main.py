@@ -18,16 +18,15 @@ from google.cloud.speech_v2 import SpeechClient
 from google.cloud.speech_v2.types import cloud_speech as cloud_speech_types
 from confluent_kafka import Producer
 
-# --- Configuration & Setup ---
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-PROJECT_ID = "streamer-478916"
-SERVICE_ACCOUNT_PATH = os.getenv(
-    "SERVICE_ACCOUNT_KEY_PATH", "./service_account_creds.json"
-)
+
+# --- Google Cloud Configuration ---
+PROJECT_ID = os.getenv("PROJECT_ID")
+SERVICE_ACCOUNT_PATH = os.getenv("SERVICE_ACCOUNT_KEY_PATH")
 LOCATION = "global"
 
 # --- Kafka Configuration ---
@@ -40,7 +39,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 app = Flask(__name__)
 
 # --- Global Queue & Event Control ---
-# Increased size to buffer audio during the split-second API reconnection
 audio_queue = queue.Queue(maxsize=1000)
 stop_event = threading.Event()
 VIDEO_ID = None
@@ -48,6 +46,7 @@ VIDEO_ID = None
 
 def create_kafka_producer():
     """Initializes and returns a Confluent Kafka Producer."""
+
     if not all([KAFKA_BOOTSTRAP_SERVERS, KAFKA_API_KEY, KAFKA_API_SECRET, KAFKA_TOPIC]):
         logger.warning(
             "Missing Kafka environment variables. Kafka production disabled."
@@ -81,6 +80,7 @@ def delivery_report(err, msg):
 
 def get_live_stream_url(video_url: str) -> str:
     """Extracts the direct .m3u8 URL safely for Cloud Run."""
+
     gcp_secret_path = Path("/secrets/cookies.txt")
     local_dev_path = BASE_DIR / "cookies.txt"
     cookie_source = None
@@ -133,7 +133,7 @@ def start_ffmpeg_worker(video_url):
 
     def ffmpeg_worker():
         try:
-            stream_url = get_live_stream_url(video_url)
+            stream_url =get_live_stream_url(video_url)
             logger.info("FFmpeg starting capture...")
 
             ffmpeg_cmd = [
@@ -178,7 +178,7 @@ def start_ffmpeg_worker(video_url):
         except Exception as e:
             logger.error(f"FFmpeg Worker Error: {e}")
         finally:
-            audio_queue.put(None)  # Signal end of stream
+            audio_queue.put(None)  
 
     t = threading.Thread(target=ffmpeg_worker, daemon=True)
     t.start()
@@ -190,7 +190,7 @@ def request_generator_session(config, timeout_seconds=290):
     Yields audio chunks for ~290 seconds, then returns.
     This allows the main loop to close the request cleanly and restart a new one.
     """
-    # 1. Send Configuration Frame First
+
     yield cloud_speech_types.StreamingRecognizeRequest(
         recognizer=f"projects/{PROJECT_ID}/locations/global/recognizers/_",
         streaming_config=config,
@@ -199,13 +199,12 @@ def request_generator_session(config, timeout_seconds=290):
     start_time = time.time()
 
     while True:
-        # 2. Check Time Limit (Reconnect before 305s limit)
-        if time.time() - start_time > timeout_seconds:
-            logger.info("♻️ Refreshing Stream Session (Time Limit)...")
+       
+        if time.time() - start_time > timeout_seconds: ## STT session automatically closes after 5 minutes, this is to refresh the session
+            logger.info("Refreshing Stream Session (Time Limit)...")
             return
 
         try:
-            # 3. Get Audio from Queue
             chunk = audio_queue.get(timeout=10.0)
 
             if chunk is None:
@@ -214,19 +213,18 @@ def request_generator_session(config, timeout_seconds=290):
             yield cloud_speech_types.StreamingRecognizeRequest(audio=chunk)
 
         except queue.Empty:
-            # Just keep waiting, stream might be buffering
             continue
 
 
-def run_transcription(video_url: str):
+def run_transcription(video_url: str, video_id: str):
     """Main Orchestrator: Starts FFmpeg once, restarts Google API in a loop."""
+
     client = SpeechClient.from_service_account_json(SERVICE_ACCOUNT_PATH)
     producer = create_kafka_producer()
 
-    # 1. Start FFmpeg Background Worker
+
     start_ffmpeg_worker(video_url)
 
-    # 2. Configure Google Speech
     recognition_config = cloud_speech_types.RecognitionConfig(
         explicit_decoding_config=cloud_speech_types.ExplicitDecodingConfig(
             encoding=cloud_speech_types.ExplicitDecodingConfig.AudioEncoding.LINEAR16,
@@ -240,20 +238,16 @@ def run_transcription(video_url: str):
         config=recognition_config
     )
 
-    logger.info("✅ Starting Infinite Transcription Loop...")
+    logger.info("Starting Infinite Transcription Loop...")
 
-    # 3. Infinite Reconnection Loop
     while not stop_event.is_set():
         try:
-            # Create generator that lasts only 290 seconds
             requests_gen = request_generator_session(
                 streaming_config, timeout_seconds=290
             )
 
-            # Call API
             responses = client.streaming_recognize(requests=requests_gen)
 
-            # Process Responses
             for response in responses:
                 if not response.results:
                     continue
@@ -272,8 +266,7 @@ def run_transcription(video_url: str):
                                 audio_data = {
                                     "published_at": int(time.time() * 1000),
                                     "transcript": transcript,
-                                    "is_final": True,
-                                    "video_id": VIDEO_ID,
+                                    "video_id": video_id,
                                 }
                                 producer.produce(
                                     topic=KAFKA_TOPIC,
@@ -282,17 +275,16 @@ def run_transcription(video_url: str):
                                     callback=delivery_report,
                                 )
                                 producer.poll(0)
+
                             except Exception as e:
                                 logger.error(f"Kafka Error: {e}")
 
         except Exception as e:
             logger.error(f"Stream Loop Exception: {e}")
-            # If the queue is empty/None, break completely
             if not audio_queue.empty() and audio_queue.queue[-1] is None:
                 break
-            time.sleep(1)  # Brief pause before reconnecting
+            time.sleep(1)  
 
-    # Cleanup
     if producer:
         producer.flush()
 
@@ -316,21 +308,19 @@ def index():
                 video_id = payload.get("video_id")
 
                 if video_id:
-                    VIDEO_ID = video_id  # noqa
                     youtube_url = f"https://www.youtube.com/watch?v={video_id}"
                     logger.info(f"Starting job for: {youtube_url}")
 
-                    # Reset stop event for new thread
                     stop_event.clear()
 
-                    # Clean queue (optional but good practice)
                     with audio_queue.mutex:
                         audio_queue.queue.clear()
 
-                    t = threading.Thread(target=run_transcription, args=(youtube_url,))
+                    t = threading.Thread(target=run_transcription, args=(youtube_url, video_id))
                     t.daemon = True
                     t.start()
                     return "Started", 200
+
             except Exception as e:
                 logger.error(f"PubSub Error: {e}")
                 return "Error", 500
@@ -340,4 +330,4 @@ def index():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)  # nosec B104
+    app.run(host="0.0.0.0", port=port)  
