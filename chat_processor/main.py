@@ -127,7 +127,7 @@ def analyze_with_gemini(messages_list, audio_transcripts):
         "2. Calculate 'audio_sentiment' from the transcripts (-1.0 to 1.0).\n"
         "3. Identify 'top_topics' discussed in the chat messages.\n"
         "4. Identify 'correlated_chats': a list of dictionary objects containing chat messages (with sender and message) where the viewers"
-        "are directly responding to or mentioning topics found in the streamer's transcripts.\n"
+        "are responding to or mentioning topics found in the streamer's transcripts, there is no need for the correlation to be direct, a genral idea, anything vague would be nice, return at least 5 messages. Also don't duplicate chat messages.\n"
         "5. Count 'unique_correlated_users' who sent those specific messages."
         "6. Identify 'key_phrases' discussed in the chat messages."
         "7. Make a 'audio_summary' of the streamer's transcripts it whould be maximum 12-15 words long and should be a single sentence."
