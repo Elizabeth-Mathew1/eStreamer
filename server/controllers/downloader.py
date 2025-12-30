@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class DownloadController:
-    THRESHOLD = 0.6
+    THRESHOLD = 0.7
 
     def __init__(self, video_id: str) -> None:
         self.db = firestore.Client(database=FIRESTORE_DB_NAME)
