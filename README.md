@@ -11,6 +11,34 @@ At the heart of a digital audience of 1.17 billion (source: Forbes), daily viewe
 
 Being creators and streamers ourselves, with access to a huge community of streamers, we recognised the pressing need for real-time insights of our live streams and how they could help with metrics like viewer retention and churn. Our mission is to empower the next generation of streamers with real-time data and insights, ensuring that a career in content creation remains sustainable, healthy, and rewarding. FluxIQ is the tool we wish we had when we started, but it is also the co-pilot we absolutely need now.
 
+## Current Problems FluxIQ Solves
+Streaming has evolved from a hobby into a high-stakes digital workforce. However, the systems built to support this growth have absolutely neglected the human behind the camera.
+
+**One Peek At The Numbers**
+
+Recent data from 2024–2025 reveals a staggering shift in creator well-being:
+
+- Performance Obsession: 65% of creators report being *obsessed* with content performance and real-time analytics, leading to chronic anxiety.
+
+- The Identity Trap: 58% of streamers admit their self-worth declines immediately when a stream underperforms or viewership dips.
+
+- The Retention Cliff: While there are 7.3 million active channels on platforms like Twitch, the *churn rate* is massive, thousands of creators quit every month, citing mental exhaustion.
+  It's also reported that new streamers are likely to quit after 6 months due to the insane demands.
+
+- Extreme Burnout: In specialised studies of full-time streamers, 62% experience burnout, and creators are twice as likely to report suicidal thoughts compared to the general population.
+<br/>
+<br/>
+
+**Why Existing Tools Fail?**
+
+Most streaming platforms provide *Post-Stream Summaries*. By the time a streamer sees they are losing audience interest or that the chat sentiment turned negative, the damage is already done. This retrospective data creates a cycle of Post-Stream Guilt rather than In-Stream Action.
+<br/>
+<br/>
+
+## Introducing FluxIQ
+
+FluxIQ transforms the chaotic stream of live data into a streamlined, actionable roadmap for creators. By integrating live audio processing with real-time sentiment tracking, we provide four pillar features designed to maximize growth while minimizing cognitive load. FluxIQ also focuses on being proactive instead of being reactive.
+
 
 ## What it does
 
@@ -100,7 +128,16 @@ Deployment & DevOps
 - Docker: Containerization of backend services to ensure parity between local and cloud environments.
 
 **Our Endpoints**
+<br/>
 
+| Endpoint | Description |
+| ----------- | ------------ |
+| `/video_id` | For ingesting video-id to google cloud pub-sub from stream-server |
+| `/analyze` | To query top chats, chat sentiment, active users from firestore |
+| `/correlate` | To find records that have a correlation with audio and chat |
+| `/download` | created the trigger for job to create key moments |
+| `/video/poll` | to check status of video downloads from firestore |
+| `/predict` | to predict future insights from previous data in firestore |
 
 Now, let's examine each feature in greater technical detail:
 
@@ -108,9 +145,13 @@ Now, let's examine each feature in greater technical detail:
 
 User Flow
 <br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/sentiment_user_flow.png" width="1000" height="500">
+<br/>
 The streamer enters their Live URL and defines the desired Time Frame on the FluxIQ dashboard. Instantly, the interface transitions into a live command center, populating with real-time sentiment scores and engagement metrics. The user sees a granular breakdown of the stream's health, including a dynamic Vibe Score, a list of Top Chats that are driving the current energy, identification of Most Active Users, and AI-clustered Hot Topics. This allows the streamer to immediately understand the audience's mood and pivot their content without ever leaving the broadcast.
 
 Technical & Authority Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/sentiment_auth_flow.png" width="1000" height="500">
 <br/>
 When a request is submitted, it hits a Flask server which acts as the orchestration layer, publishing the video metadata to a Google Cloud Pub/Sub topic. This decouples the initial request from the task of data ingestion, allowing the system to scale for thousands of concurrent streamers. HTTP Push Subscribers consume these messages and establish high-speed gRPC connections to the YouTube servers to fetch live chats. gRPC is utilised here for its superior efficiency over traditional REST; it provides a bi-directional, low-latency stream that ensures no messages are dropped during high-velocity chat bursts. These chats are then ingested into a Confluent Cloud Kafka Topic, which serves as the resilient backbone of the pipeline, easily handling ingestion rates of 90–200 messages per second.
 <br/>
@@ -121,9 +162,13 @@ To transform this raw data into intelligence, we use ksqlDB powered by FlinkSQL 
 
 User Flow
 <br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/correlate_user_flow.png" width="1000" height="500">
+<br/>
 The streamer enters their Live URL and selects the Time Frame for analysis. The dashboard generates a synchronised timeline where every sentence spoken by the streamer is displayed alongside its specific chat correlation. The user can see the exact chat volume and sentiment triggered by specific topics, jokes, or statements. This allows the creator to identify high-impact moments with surgical precision, understanding not just that the audience cheered, but exactly which word caused the roar.
 
 Technical & Authority Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/correlate_auth_flow.png"  width="1000" height="500">
 <br/>
 Similar to the previous feature, the process begins with a GCP Pub/Sub push trigger that activates a specialised ingestion worker. This worker uses yt-dlp to extract dynamic stream links, which are then fed to an FFmpeg subprocess running in a background thread. This subprocess captures the live HLS audio stream (.m3u8) in real time. The raw audio is immediately processed by the Google Speech-to-Text (STT V2) API, converting spoken words into high-fidelity transcripts. These transcripts are ingested into a dedicated Confluent Cloud Kafka Topic at a massive scale of 500–600 events per second.
 
@@ -131,7 +176,34 @@ The intelligence happens in ksqlDB, where we use FlinkSQL to perform a complex L
 
 **#3. Predictive Insights**
 
+User Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/predictive-insights-user-flow.png" width="1000" height="500">
+<br/>
+Imagine having a professional TV producer whispering in your ear, telling you exactly when the audience is getting bored or when excitement is peaking. This our FluxIQ. As you stream, the AI silently analyzes the chat's speed and mood in the background. Instead of making you read every single message, the dashboard gives you a simple forecast. It might say, "Energy is dropping, try switching games," or "Chat is loving this story, keep going!" This allows you to adjust your content in real-time to keep your audience hooked, without needing to be a data scientist.
+
+Technical & Authority Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/predictive-insights-technical-flow.png" width="1000" height="500">
+<br/>
+
+When the frontend polls the /predict endpoint, the PredictionController executes a high-performance query against Google Firestore, aggregating the last five minutes of granular data—such as message velocity, sentiment variance, and top keywords—into a chronological "Context Window." This serialized context is then injected into Google Gemini 2.0 Flash, where a strict JSON Schema enforces the model to return a structured output containing a sentiment_score, strategy, and reasoning, ensuring crash-proof reliability. The resulting JSON is delivered to the client in under 800ms, allowing the frontend to instantly render a sentiment trend line and display the "Coach Card" for immediate, data-backed strategic advice.
+
 **#4. Automated Viral Clip Discovery**
+
+User Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/video-downloader-user-flow.png" width="1000" height="500">
+<br/>
+When a big moment happens, whether our AI spots it or you click the button, the system instantly gets to work. You don't need to pause your game, worry about recording software, or slow down your computer. You just keep streaming. Within moments, the status changes to "Ready," and your clip is waiting for you. You get a downloadable video file immediately, allowing you to turn a live moment into a viral social media post while the hype is still fresh.
+
+Technical & Authority Flow
+<br/>
+<img src="https://raw.githubusercontent.com/Elizabeth-Mathew1/eStreamer/master/assets/video-downloader-technical-flow.png" width="1000" height="500">
+<br/>
+Deep in the backend, a Google Cloud Run worker acts as the consumer. It utilizes a secure injection of cookies.txt from Google Secret Manager to authenticate requests, bypassing age restrictions and bot detection systems. We utilize a highly customized implementation of yt-dlp configured to bypass Cloud Run’s read-only filesystem restrictions and enforce IPv4 networking to fetch the highest quality raw stream URL. This URL is fed into FFmpeg, which performs a precise, lossless cut of the video segment.
+
+Finally, the processed MP4 is uploaded to Google Cloud Storage (GCS) for durable hosting. Upon completion, the worker publishes a result message to a secondary video-status Kafka topic. A background listener consumes this status and updates Firestore, triggering a real-time UI update on the client. This entire cycle from Kafka ingestion to cloud storage demonstrates a robust, fault tolerant architecture capable of handling concurrent clip requests without dropping a frame.
 
 
 ## Challenges we ran into
