@@ -2,6 +2,8 @@
  
 
 *The name Flux is derived from the word Fluxus, which means stream or flow, in Old French.*
+<br/><br/>
+[![Watch the video](https://img.youtube.com/vi/6THaKnS_kZ8/maxresdefault.jpg)](https://www.youtube.com/watch?v=6THaKnS_kZ8)
 
 ## Inspiration
 
@@ -270,3 +272,4 @@ Multimodal Emotion AI
 Support for emojis, multi-language support
 <br/>
 We do currently offer support for emojis as well as various different languages, but we would like to make it better and fine-tune models to handle these cases more efficiently.
+
